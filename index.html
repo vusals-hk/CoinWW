@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WWcoin — Clicker with TON Withdraw</title>
+
+<script src='//libtl.com/sdk.js' data-zone='10286020' data-sdk='show_10286020'></script>
+<script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect.umd.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
+<style>
+body{margin:0;font-family:Inter,Roboto,sans-serif;background:linear-gradient(180deg,#fffaf0,#ffffff);display:flex;justify-content:center;align-items:center;height:100vh;}
+.card{width:95%;max-width:480px;height:95vh;background:#fff;border-radius:16px;padding:20px;box-shadow:0 6px 24px rgba(15,23,42,0.06);display:flex;flex-direction:column;overflow:hidden;}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{margin:0;font-size:22px}
+.grid{flex:1;overflow:auto;display:flex;flex-direction:column;gap:16px;}
+.play{display:flex;flex-direction:column;align-items:center;padding:18px;border-radius:12px;}
+.big-btn{border:0;border-radius:999px;padding:34px 44px;font-size:44px;cursor:pointer;background:linear-gradient(180deg,#fff4d6,#fde68a);box-shadow:inset 0 -6px 18px rgba(0,0,0,0.04);}
+.stats{width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.energy{width:100%;max-width:420px}
+.bar{height:10px;background:#f1f5f9;border-radius:999px;overflow:hidden}
+.bar>i{display:block;height:100%;background:#f59e0b;transition:width .3s}
+button.small{padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
+.btn-primary{background:#6366f1;color:#fff}
+.muted{color:#6b7280;font-size:13px}
+.ad-buttons{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.shop{padding:12px;background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05)}
+.withdraw{margin-top:12px;border-top:1px dashed #eef2f7;padding-top:12px;}
+.select, .withdraw button{width:100%;box-sizing:border-box;}
+.select{padding:8px;border-radius:8px;border:1px solid #e6e9ee;margin-bottom:8px;}
+.hidden{display:none;}
+.footer{margin-top:14px;text-align:center;color:#65748b;font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <div>
+      <h1>WWcoin</h1>
+      <div class="muted">Convert Coin to "TON"</div>
+    </div>
+    <div style="text-align:right">
+      <div class="muted">Level</div>
+      <div id="level" style="font-weight:700">1</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Click Screen -->
+    <div id="clickScreen" class="play">
+      <div class="stats" style="width:100%">
+        <div class="muted">Coins</div>
+        <div id="coins" style="font-size:20px;font-weight:700">0</div>
+      </div>
+
+      <button id="tapBtn" class="big-btn">🪙</button>
+
+      <div style="width:100%;margin-top:14px;display:flex;flex-direction:column;align-items:center">
+        <div class="energy">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;margin-bottom:6px">
+            <span>Energy</span>
+            <span id="energyText">10/10</span>
+          </div>
+          <div class="bar"><i id="energyBar" style="width:100%"></i></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="refillBtn" class="small">Refill</button>
+            <button id="boostBtn" class="small btn-primary">Activate Boost</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="connectWalletBtn" style="margin-top:12px"></div>
+      <div id="walletAddress" class="muted" style="margin-top:6px">Wallet not connected</div>
+
+      <!-- Ad Rewards stays in click screen -->
+      <div style="margin-top:12px">
+        <h4 style="margin:6px 0">Ad Rewards</h4>
+        <div class="ad-buttons">
+          <button class="small" id="ad3">3 ads → 50</button>
+          <button class="small" id="ad5">5 ads → 100</button>
+          <button class="small" id="ad10">10 ads → 350</button>
+        </div>
+        <div id="adProgress" class="muted" style="margin-top:8px">Progress: —</div>
+      </div>
+
+      <div style="width:100%;display:flex;justify-content:center;margin-top:8px">
+        <button id="goWithdrawBtn" class="small btn-primary">Go to Withdraw</button>
+      </div>
+    </div>
+
+    <!-- Withdraw Screen -->
+    <aside id="withdrawScreen" class="shop hidden">
+      <h3 style="margin-top:0;margin-bottom:8px">Withdraw / Convert to TON</h3>
+      <div class="withdraw">
+        <label for="convertSelect" class="muted">Choose package (coins → TON):</label>
+        <select id="convertSelect" class="select">
+          <option value="10000">10,000 → 0.1 TON</option>
+          <option value="30000">30,000 → 0.3 TON</option>
+          <option value="50000">50,000 → 0.5 TON</option>
+          <option value="100000">100,000 → 1.0 TON</option>
+          <option value="300000">300,000 → 3.0 TON</option>
+          <option value="500000">500,000 → 5.0 TON</option>
+          <option value="1000000">1,000,000 → 10.0 TON</option>
+        </select>
+        <div id="selectedInfo" class="small-muted">Wallet must be connected to withdraw.</div>
+        <button id="withdrawBtn" class="small btn-primary" style="margin-top:8px" disabled>Withdraw TON</button>
+      </div>
+      <div style="margin-top:12px; text-align:center">
+        <button id="backToClick" class="small btn-primary">Back to Click Game</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="footer">Tip: Connect wallet, choose package, confirm transaction — coins will be deducted after success.</div>
+</div>
+
+<script>
+const OWNER_WALLET = "UQCw7qsZfDdBhFcJCZh8LzA85nVXcOK7UmquWiAbX3dZGlpZ";
+const MANIFEST_URL = "https://vusals-hk.github.io/ClickGAME/tonconnect-manifest.json";
+
+const state = {
+  coins: Number(localStorage.getItem('hk_coins'))||0,
+  tapPower: 1,
+  autoIncome: 0,
+  energy: 10,
+  maxEnergy: 10,
+  level: 1,
+  boostActive: false,
+  tonConnected:false,
+  tonAccount:null
+};
+
+const coinsEl=document.getElementById('coins');
+const energyText=document.getElementById('energyText');
+const energyBar=document.getElementById('energyBar');
+const levelEl=document.getElementById('level');
+const adProgressEl=document.getElementById('adProgress');
+const walletAddressEl=document.getElementById('walletAddress');
+const convertSelect=document.getElementById('convertSelect');
+const withdrawBtn=document.getElementById('withdrawBtn');
+const selectedInfo=document.getElementById('selectedInfo');
+const clickScreen=document.getElementById('clickScreen');
+const withdrawScreen=document.getElementById('withdrawScreen');
+const goWithdrawBtn=document.getElementById('goWithdrawBtn');
+const backToClick=document.getElementById('backToClick');
+
+const adProgress={'50':0,'100':0,'350':0};
+const adRequirements={'50':3,'100':5,'350':10};
+
+function saveState(){localStorage.setItem('hk_coins',state.coins);}
+function render(){
+  coinsEl.textContent=Math.floor(state.coins).toLocaleString();
+  energyText.textContent=`${Math.floor(state.energy)}/${state.maxEnergy}`;
+  energyBar.style.width=`${Math.min(1,state.energy/state.maxEnergy)*100}%`;
+  levelEl.textContent=state.level;
+  adProgressEl.textContent=`50:${adProgress['50']}/${adRequirements['50']} • 100:${adProgress['100']}/${adRequirements['100']} • 350:${adProgress['350']}/${adRequirements['350']}`;
+  updateWithdrawUI();
+}
+
+function handleTap(){if(state.energy<=0){alert('No energy');return;} state.coins+=state.tapPower*(state.boostActive?2:1); state.energy=Math.max(0,state.energy-1); saveState(); render();}
+function activateBoost(sec=20){if(state.boostActive)return;state.boostActive=true;render();setTimeout(()=>{state.boostActive=false;render();},sec*1000);}
+
+setInterval(()=>{if(state.autoIncome>0)state.coins+=state.autoIncome;state.energy=Math.min(state.maxEnergy,state.energy+0.2);saveState();render();},1000);
+
+function showAd(){return new Promise(resolve=>{if(window.show_10286020 && typeof show_10286020==='function'){try{show_10286020().then(()=>resolve(true));}catch(e){resolve(false);}}else{const ok=confirm('Simulate ad?');setTimeout(()=>resolve(ok),500);}});}
+
+async function watchAd(reward){const req=adRequirements[reward];const watched=await showAd();if(!watched)return;adProgress[reward]++;if(adProgress[reward]>=req){state.coins+=Number(reward);adProgress[reward]=0;alert(`${reward} coin qazandınız!`);}else alert(`Reklama baxıldı (${adProgress[reward]}/${req})`);saveState();render();}
+
+function updateWithdrawUI(){const needed=Number(convertSelect.value);withdrawBtn.disabled=!(state.tonConnected && state.coins>=needed);selectedInfo.textContent=`Selected: ${needed} coins → Wallet: ${state.tonConnected?state.tonAccount.address:'not connected'}`;}
+
+convertSelect.addEventListener('change',updateWithdrawUI);
+document.getElementById('tapBtn').addEventListener('click',handleTap);
+document.getElementById('refillBtn').addEventListener('click',()=>{state.energy=state.maxEnergy;render();});
+document.getElementById('boostBtn').addEventListener('click',()=>activateBoost(20));
+document.getElementById('ad3').addEventListener('click',()=>watchAd('50'));
+document.getElementById('ad5').addEventListener('click',()=>watchAd('100'));
+document.getElementById('ad10').addEventListener('click',()=>watchAd('350'));
+
+goWithdrawBtn.addEventListener('click',()=>{clickScreen.classList.add('hidden');withdrawScreen.classList.remove('hidden');});
+backToClick.addEventListener('click',()=>{withdrawScreen.classList.add('hidden');clickScreen.classList.remove('hidden');});
+
+const ui=new TON_CONNECT_UI.TonConnectUI({manifestUrl:MANIFEST_URL,buttonRootId:'connectWalletBtn'});
+ui.onStatusChange(wallet=>{if(wallet){state.tonConnected=true;state.tonAccount=wallet.account;walletAddressEl.textContent="Wallet: "+wallet.account.address;}else{state.tonConnected=false;state.tonAccount=null;walletAddressEl.textContent="Wallet not connected";}updateWithdrawUI();});
+
+withdrawBtn.addEventListener('click',async()=>{
+  const needed=Number(convertSelect.value);if(state.coins<needed){alert('Not enough coins');return;}if(!state.tonConnected){alert('Connect wallet');return;}
+  const amountNano=String(Math.round(0.1*1_000_000_000)); // simple example
+  try{withdrawBtn.disabled=true;withdrawBtn.textContent='Waiting...';await ui.sendTransaction({validUntil:Math.floor(Date.now()/1000)+300,messages:[{address:OWNER_WALLET,amount:amountNano}]});state.coins-=needed;saveState();render();alert(`Success: ${needed} coins sent as TON.`);}catch(err){alert('Tx failed.');}finally{withdrawBtn.textContent='Withdraw TON';updateWithdrawUI();}});
+
+render();
+</script>
+
+</body>
+</html>
