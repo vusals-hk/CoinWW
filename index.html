@@ -80,7 +80,7 @@ button.small{padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
         <div class="ad-buttons">
           <button class="small" id="ad3">3 ads → 50</button>
           <button class="small" id="ad5">5 ads → 100</button>
-          <button class="small" id="ad10">10 ads → 350</button>
+          <button class="small" id="ad10">10 ads → 200</button>
         </div>
         <div id="adProgress" class="muted" style="margin-top:8px">Progress: —</div>
       </div>
@@ -157,7 +157,7 @@ const backToClick=document.getElementById('backToClick');
 
 // Ad rewards
 const adProgress={'50':0,'100':0,'350':0};
-const adRequirements={'50':3,'100':5,'350':10};
+const adRequirements={'50':3,'100':5,'200':10};
 
 function saveState(){localStorage.setItem('hk_coins',state.coins);}
 function render(){
@@ -165,7 +165,7 @@ function render(){
   energyText.textContent=`${Math.floor(state.energy)}/${state.maxEnergy}`;
   energyBar.style.width=`${Math.min(1,state.energy/state.maxEnergy)*100}%`;
   levelEl.textContent=state.level;
-  adProgressEl.textContent=`50:${adProgress['50']}/${adRequirements['50']} • 100:${adProgress['100']}/${adRequirements['100']} • 350:${adProgress['350']}/${adRequirements['350']}`;
+  adProgressEl.textContent=`50:${adProgress['50']}/${adRequirements['50']} • 100:${adProgress['100']}/${adRequirements['100']} • 200:${adProgress['200']}/${adRequirements['200']}`;
   updateWithdrawUI();
   updatePaypalUI();
 }
@@ -187,7 +187,7 @@ document.getElementById('refillBtn').addEventListener('click',()=>{state.energy=
 document.getElementById('boostBtn').addEventListener('click',()=>activateBoost(20));
 document.getElementById('ad3').addEventListener('click',()=>watchAd('50'));
 document.getElementById('ad5').addEventListener('click',()=>watchAd('100'));
-document.getElementById('ad10').addEventListener('click',()=>watchAd('350'));
+document.getElementById('ad10').addEventListener('click',()=>watchAd('200'));
 goWithdrawBtn.addEventListener('click',()=>{clickScreen.classList.add('hidden');withdrawScreen.classList.remove('hidden');});
 backToClick.addEventListener('click',()=>{withdrawScreen.classList.add('hidden');clickScreen.classList.remove('hidden');});
 
