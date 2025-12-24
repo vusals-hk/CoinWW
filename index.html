@@ -177,7 +177,7 @@ setInterval(()=>{if(state.autoIncome>0)state.coins+=state.autoIncome;state.energ
 
 // Ads
 function showAd(){return new Promise(resolve=>{if(window.show_10286020 && typeof show_10286020==='function'){try{show_10286020().then(()=>resolve(true));}catch(e){resolve(false);}}else{const ok=confirm('Simulate ad?');setTimeout(()=>resolve(ok),500);}});}
-async function watchAd(reward){const req=adRequirements[reward];const watched=await showAd();if(!watched)return;adProgress[reward]++;if(adProgress[reward]>=req){state.coins+=Number(reward);adProgress[reward]=0;alert(`${reward} coin qazandınız!`);}else alert(`Reklama baxıldı (${adProgress[reward]}/${req})`);saveState();render();}
+async function watchAd(reward){reward = String(reward);const req=adRequirements[reward];const watched=await showAd();if(!watched)return;adProgress[reward]++;if(adProgress[reward]>=req){state.coins+=Number(reward);adProgress[reward]=0;alert(`${reward} coin qazandınız!`);}else alert(`Reklama baxıldı (${adProgress[reward]}/${req})`);saveState();render();}
 
 // Withdraw UI
 function updateWithdrawUI(){const needed=Number(convertSelect.value);withdrawBtn.disabled=!(state.tonConnected && state.coins>=needed);selectedInfo.textContent=`Selected: ${needed} coins → Wallet: ${state.tonConnected?state.tonAccount.address:'not connected'}`;}
